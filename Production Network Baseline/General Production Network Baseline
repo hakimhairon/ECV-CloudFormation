@@ -1,0 +1,362 @@
+#This template is use for Production Workload Network Baseline setup
+#Do create VPC from AWS console first before launch this template. Make sure the VPC is created from IPAM pool.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Production Workload Network Basline Template'
+
+Parameters:
+  AccountName:
+    Type: String
+    Description: 'Name for the account. Keep it lowercase. Example: arrow'
+    AllowedPattern: '^[a-z_-]+$'
+  ExistingVpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'Choose from existing VPC'
+  TransitGatewayId:
+    Type: String
+    Description: "The ID of transit gateway"
+  Region:
+    Type: String
+    Description: 'AWS Region Code. Example: ap-southeast-1'
+  #Refer to network diagram for subnet formation.
+  SubnetPublicACIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPublicBCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPublicCCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPrivateAppACIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/26. Do not enter /26'
+  SubnetPrivateAppBCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/26. Do not enter /26'
+  SubnetPrivateAppCCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/26. Do not enter /26'
+  SubnetPrivateDataACIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPrivateDataBCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPrivateDataCCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/27. Do not enter /27'
+  SubnetPrivateFirewallACIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/28. Do not enter /28'
+  SubnetPrivateFirewallBCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/28. Do not enter /28'
+  SubnetPrivateFirewallCCIDR:
+    Type: String
+    Description: 'insert initial ip. Example: X.X.X.X/28. Do not enter /28'
+
+Resources:
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-igw'
+
+#Uncomment below if you have custom DHCP option set to be configured and set to the VPC
+  # MyDHCPOptions:
+  #   Type: 'AWS::EC2::DHCPOptions'
+  #   Properties:
+  #     DomainName: 'ap-southeast-1.compute.internal'
+  #     DomainNameServers: 
+  #       - 'DNS Server IP'
+  #       - 'DNS Server IP'
+  #       - 'AmazonProvidedDNS'
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Sub 'prod-${AccountName}-dhcp'
+  
+  # DHCPOptionsAssociation:
+  #   Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+  #   Properties:
+  #     DhcpOptionsId: !Ref MyDHCPOptions
+  #     VpcId: !Ref ExistingVpcId
+
+  AttachGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      InternetGatewayId: !Ref InternetGateway
+      
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPublicACIDR}/27'
+      AvailabilityZone: !Sub '${Region}a'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-public-subnet-a'
+
+  PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPublicBCIDR}/27'
+      AvailabilityZone: !Sub '${Region}b'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-public-subnet-b'
+
+  PublicSubnet3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPublicCCIDR}/27'
+      AvailabilityZone: !Sub '${Region}c'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-public-subnet-c'
+  
+  PrivateSubnetApp1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateAppACIDR}/26'
+      AvailabilityZone: !Sub '${Region}a'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-app-a'
+
+  PrivateSubnetApp2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateAppBCIDR}/26'
+      AvailabilityZone: !Sub '${Region}b'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-app-b'
+
+  PrivateSubnetApp3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateAppCCIDR}/26'
+      AvailabilityZone: !Sub '${Region}c'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-app-c'
+  
+  PrivateSubnetData1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateDataACIDR}/27'
+      AvailabilityZone: !Sub '${Region}a'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-data-a'
+
+  PrivateSubnetData2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateDataBCIDR}/27'
+      AvailabilityZone: !Sub '${Region}b'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-data-b'
+
+  PrivateSubnetData3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateDataCCIDR}/27'
+      AvailabilityZone: !Sub '${Region}c'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-data-c'
+
+  PrivateSubnetFirewall1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateFirewallACIDR}/28'
+      AvailabilityZone: !Sub '${Region}a'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-firewall-a'
+
+  PrivateSubnetFirewall2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateFirewallBCIDR}/28'
+      AvailabilityZone: !Sub '${Region}b'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-firewall-b'
+
+  PrivateSubnetFirewall3:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      CidrBlock: !Sub '${SubnetPrivateFirewallCCIDR}/28'
+      AvailabilityZone: !Sub '${Region}c'
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-private-subnet-firewall-c'
+
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-rt-public'
+
+  PrivateRouteTableApp:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-rt-private-app'
+
+  PrivateRouteTableData:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-rt-private-data'
+  
+  PrivateRouteTableFirewall:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ExistingVpcId
+      Tags:
+        - Key: Name
+          Value: !Sub 'prod-${AccountName}-rt-private-firewall'
+
+  PublicSubnet1Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet3Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateSubnetApp1Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetApp1
+      RouteTableId: !Ref PrivateRouteTableApp
+
+  PrivateSubnetApp2Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetApp2
+      RouteTableId: !Ref PrivateRouteTableApp
+
+  PrivateSubnetApp3Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetApp3
+      RouteTableId: !Ref PrivateRouteTableApp
+
+  PrivateSubnetData1Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetData1
+      RouteTableId: !Ref PrivateRouteTableData
+
+  PrivateSubnetData2Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetData2
+      RouteTableId: !Ref PrivateRouteTableData
+
+  PrivateSubnetData3Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetData3
+      RouteTableId: !Ref PrivateRouteTableData
+
+  PrivateSubnetFirewall1Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetFirewall1
+      RouteTableId: !Ref PrivateRouteTableFirewall
+
+  PrivateSubnetFirewall2Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetFirewall2
+      RouteTableId: !Ref PrivateRouteTableFirewall
+
+  PrivateSubnetFirewall3Association:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetFirewall3
+      RouteTableId: !Ref PrivateRouteTableFirewall
+
+  MyTransitGatewayAttachment:
+    Type: 'AWS::EC2::TransitGatewayAttachment'
+    Properties:
+      TransitGatewayId: !Ref TransitGatewayId
+      VpcId: !Ref ExistingVpcId
+      SubnetIds: 
+        - !Ref PrivateSubnetFirewall1
+        - !Ref PrivateSubnetFirewall2
+        - !Ref PrivateSubnetFirewall3
+      Tags:
+        - Key: Name
+          Value: !Sub 'tgwa-prod-${AccountName}-vpc'
+
+  MyRoutePublic:
+    Type: 'AWS::EC2::Route'
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0' 
+      GatewayId: !Ref InternetGateway
+  
+  MyRoutePrivateApp:
+    Type: 'AWS::EC2::Route'
+    DependsOn: MyTransitGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableApp
+      DestinationCidrBlock: '0.0.0.0/0' 
+      TransitGatewayId: !Ref TransitGatewayId
+
+  MyRoutePrivateData:
+    Type: 'AWS::EC2::Route'
+    DependsOn: MyTransitGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableData
+      DestinationCidrBlock: '0.0.0.0/0' 
+      TransitGatewayId: !Ref TransitGatewayId
+  
+  MyRoutePrivateFirewall:
+    Type: 'AWS::EC2::Route'
+    DependsOn: MyTransitGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableFirewall
+      DestinationCidrBlock: '0.0.0.0/0' 
+      TransitGatewayId: !Ref TransitGatewayId
