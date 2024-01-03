@@ -2,7 +2,7 @@
 #Do create VPC from AWS console first before launch this template. Make sure the VPC is created from IPAM pool.
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Production Workload Network Basline Template'
+Description: 'Production Workload Network Baseline Template'
 
 Parameters:
   AccountName:
